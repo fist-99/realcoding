@@ -2,6 +2,8 @@ package ac.cnu.realcoding.service;
 
 import java.net.URI;
 
+import ac.cnu.realcoding.encoding.Base62Processor;
+import ac.cnu.realcoding.repository.URLInformation;
 import org.springframework.stereotype.Service;
 
 import ac.cnu.realcoding.configurations.ApplicationConfiguration;
@@ -9,6 +11,7 @@ import ac.cnu.realcoding.models.UrlShortenerRequest;
 import ac.cnu.realcoding.models.UrlShortenerResponse;
 import ac.cnu.realcoding.repository.URLRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -30,6 +33,17 @@ public class UrlShortenerService {
         // Problem B: Insert to database and get PK from database, PK should be auto-generated integer.
         // Problem C: Encode PK by using Base 63.
         // Problem D: Build UrlShortenerResponse with server host and port.
-        return Mono.error(new UnsupportedOperationException("not implemented"));
+        //return Mono.error(new UnsupportedOperationException("not implemented"));
+        String url = urlShortenerRequest.getUrl();
+        return urlRepository.save(new URLInformation(url))
+                .map(URLInformation::getId)
+                .map(Base62Processor::encode)
+                .map(encode -> UriComponentsBuilder.newInstance().newInstance()
+                                .scheme("http")
+                                .host(applicationConfig.getHost())
+                                .port(applicationConfig.getPort())
+                                .path(encode)
+                                .toUriString())
+                .map(UrlShortenerResponse::of);
     }
 }
